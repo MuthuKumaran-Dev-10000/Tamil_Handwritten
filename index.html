@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tamil Drawing Board</title>
+  <style>
+    #keyboard {
+      display: flex;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+
+    .key {
+      width: 40px;
+      height: 40px;
+      margin: 5px;
+      background-color: lightgrey;
+      text-align: center;
+      line-height: 40px;
+      cursor: pointer;
+    }
+
+    #drawingBoard {
+      border: 1px solid black;
+      background-color: white;
+      position: relative;
+      cursor: crosshair;
+    }
+
+    #clear, #submit {
+      margin: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Tamil Keyboard and Drawing Board</h1>
+
+  <!-- Tamil Keyboard -->
+  <div id="keyboard">
+    <!-- Vowels (Uyir Ezhuthukal) -->
+    <div class="key" data-char="அ">அ</div>
+    <div class="key" data-char="ஆ">ஆ</div>
+    <div class="key" data-char="இ">இ</div>
+    <div class="key" data-char="ஈ">ஈ</div>
+    <div class="key" data-char="உ">உ</div>
+    <div class="key" data-char="ஊ">ஊ</div>
+    <div class="key" data-char="எ">எ</div>
+    <div class="key" data-char="ஏ">ஏ</div>
+    <div class="key" data-char="ஐ">ஐ</div>
+    <div class="key" data-char="ஒ">ஒ</div>
+    <div class="key" data-char="ஓ">ஓ</div>
+    <div class="key" data-char="ஔ">ஔ</div>
+  
+    <!-- Consonants (Mei Ezhuthukal) -->
+    <div class="key" data-char="க்">க்</div> <!-- Ka -->
+    <div class="key" data-char="ங்">ங்</div> <!-- Nga -->
+    <div class="key" data-char="ச்">ச்</div> <!-- Cha -->
+    <div class="key" data-char="ஞ்">ஞ்</div> <!-- Nya -->
+    <div class="key" data-char="ட்">ட்</div> <!-- Ta -->
+    <div class="key" data-char="ண்">ண்</div> <!-- Na (retroflex) -->
+    <div class="key" data-char="த்">த்</div> <!-- Tha -->
+    <div class="key" data-char="ந்">ந்</div> <!-- Na (dental) -->
+    <div class="key" data-char="ப்">ப்</div> <!-- Pa -->
+    <div class="key" data-char="ம்">ம்</div> <!-- Ma -->
+    <div class="key" data-char="ய்">ய்</div> <!-- Ya -->
+    <div class="key" data-char="ர்">ர்</div> <!-- Ra -->
+    <div class="key" data-char="ல்">ல்</div> <!-- La -->
+    <div class="key" data-char="வ்">வ்</div> <!-- Va -->
+    <div class="key" data-char="ழ்">ழ்</div> <!-- Zha -->
+    <div class="key" data-char="ள்">ள்</div> <!-- La (retroflex) -->
+    <div class="key" data-char="ற்">ற்</div> <!-- Rra -->
+    <div class="key" data-char="ன்">ன்</div> <!-- Na (alveolar) -->
+  
+    <!-- Additional Characters -->
+    <div class="key" data-char="௹">௹</div> <!-- Tamil Currency Symbol -->
+    <div class="key" data-char="ஃ">ஃ</div> <!-- Aytham character -->
+  </div>
+  
+
+  <p id="selectedChar">Selected Character: None</p>
+
+  <!-- Drawing Board -->
+  <canvas id="drawingBoard" width="400" height="400"></canvas>
+  <br>
+  <button id="clear">Clear</button>
+  <button id="submit">Submit</button>
+
+  <script type="module">
+    // Import Firebase SDKs
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+    import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-storage.js";
+    import { getDatabase, ref as dbRef, get, set } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCwF6jwAY3hVEwQO2rFDauj4ZjpfvcbgDk",
+      authDomain: "softwareengineering-27887.firebaseapp.com",
+      projectId: "softwareengineering-27887",
+      storageBucket: "softwareengineering-27887.appspot.com",
+      messagingSenderId: "97296846010",
+      appId: "1:97296846010:web:2f26eb30f6bd6168120683",
+      databaseURL: "https://softwareengineering-27887-default-rtdb.firebaseio.com"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const storage = getStorage(app);
+    const database = getDatabase(app);
+
+    let selectedChar = "";
+    const keyboard = document.getElementById('keyboard');
+    const selectedCharDisplay = document.getElementById('selectedChar');
+    const canvas = document.getElementById('drawingBoard');
+    const ctx = canvas.getContext('2d');
+    let drawing = false;
+
+    // Select a Tamil character
+    keyboard.addEventListener('click', (event) => {
+      if (event.target.classList.contains('key')) {
+        selectedChar = event.target.getAttribute('data-char');
+        selectedCharDisplay.textContent = `Selected Character: ${selectedChar}`;
+      }
+    });
+
+    // Drawing logic on canvas
+    canvas.addEventListener('mousedown', (event) => {
+      drawing = true;
+      draw(event);
+    });
+    canvas.addEventListener('mouseup', () => {
+      drawing = false;
+      ctx.beginPath();  // Stop drawing the current path
+    });
+    canvas.addEventListener('mousemove', draw);
+
+    function draw(event) {
+      if (!drawing) return;
+      ctx.lineWidth = 2;
+      ctx.lineCap = 'round';
+      ctx.strokeStyle = 'black';
+      ctx.lineTo(event.offsetX, event.offsetY);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(event.offsetX, event.offsetY);
+    }
+
+    // Clear button logic
+    document.getElementById('clear').addEventListener('click', () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    });
+
+    // Submit button logic: Save canvas as PNG to Firebase Storage and update counter
+    document.getElementById('submit').addEventListener('click', async () => {
+      if (!selectedChar) {
+        alert("Please select a Tamil character.");
+        return;
+      }
+
+      // Retrieve the counter from the Firebase Realtime Database
+      const charRef = dbRef(database, 'counters/' + selectedChar);
+      let counter = 0;
+
+      try {
+        const snapshot = await get(charRef);
+        if (snapshot.exists()) {
+          counter = snapshot.val();
+        }
+      } catch (error) {
+        console.error("Error getting counter:", error);
+      }
+
+      // Increment the counter
+      counter += 1;
+
+      // Convert canvas to blob (PNG format)
+      canvas.toBlob(async (blob) => {
+        // Generate file name based on selected character and counter
+        const fileName = `${selectedChar}/${selectedChar}_${counter}.png`;
+        const storageRef = ref(storage, fileName);
+
+        // Upload to Firebase Storage
+        try {
+          await uploadBytes(storageRef, blob);
+          const downloadURL = await getDownloadURL(storageRef);
+          alert(`Drawing saved! Download URL: ${downloadURL}`);
+
+          // Update the counter in Firebase Realtime Database
+          await set(charRef, counter);
+
+        } catch (error) {
+          console.error("Error uploading file:", error);
+          alert("Error uploading the file.");
+        }
+      }, 'image/png');
+    });
+  </script>
+</body>
+</html>
